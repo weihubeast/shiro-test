@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.baidu.shiro.dao.UserMapper">
+
+    <select id="getUserByUserName" parameterType="String" resultType="User">
+		select
+			password
+		from
+			users
+		where username = #{username}
+	</select>
+
+	<select id="getRolesByUserName" parameterType="String" resultType="String">
+		select
+			role_name
+		from
+			user_roles
+		where username = #{username}
+	</select>
+
+
+
+</mapper>

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="apache-tomcat-7.0">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../apache-tomcat-7.0.72" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

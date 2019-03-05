@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <!-- 自动扫描 -->
+    <context:component-scan base-package="com.baidu.shiro" />
+
+    <!-- 引入配置文件 -->
+    <bean id="propertyConfigurer"
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:spring/jdbc.properties" />
+    </bean>
+    <!--引入redis配置文件-->
+    <import resource="spring-redis.xml" />
+
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          destroy-method="close">
+        <property name="driverClassName" value="${driver}" />
+        <property name="url" value="${url}" />
+        <property name="username" value="${username}" />
+        <property name="password" value="${password}" />
+        <!-- 初始化连接大小 -->
+        <property name="initialSize" value="${initialSize}"></property>
+        <!-- 连接池最大数量 -->
+        <property name="maxActive" value="${maxActive}"></property>
+        <!-- 连接池最小空闲 -->
+        <property name="minIdle" value="${minIdle}"></property>
+        <!-- 获取连接最大等待时间 -->
+        <property name="maxWait" value="${maxWait}"></property>
+    </bean>
+
+    <!-- spring和MyBatis完美整合，不需要mybatis的配置映射文件 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--以类名当别名 -->
+        <property name="typeAliasesPackage" value="com/baidu/shiro/domain" />
+        <property name="dataSource" ref="dataSource" />
+        <!-- 自动扫描mapping.xml文件 -->
+        <property name="mapperLocations" value="classpath*:com/baidu/shiro/mapping/*.xml"></property>
+    </bean>
+
+    <!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com/baidu/shiro/dao" />
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+    </bean>
+
+
+    <!--securityManager：这个属性是必须的-->
+    <!--loginUrl：没有登录的用户请求需要登录的页面时自动跳转到登录页面，不是必须的属性，
+    不输入地址的话会自动寻找项目web项目的根目录下的”/login.jsp”页面-->
+    <!--successUrl：登录成功默认跳转页面-->
+    <!--unauthorizedUrl：没有权限默认跳转的页面-->
+    <!--anon表示不要验证就可以访问-->
+    <!--roles["admin"] 需要admin觉得才能访问-->
+    <!--perms["user:delete"] 需要delete权限才能访问-->
+    <!--authc：该过滤器下的页面必须验证后才能访问-->
+   <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+            <property name="securityManager" ref="securityManager" />
+            <property name="loginUrl" value="login.html" />
+            <property name="unauthorizedUrl" value="403.html" />
+            <property name="filterChainDefinitions">
+                <value>
+                    /login.html = anon
+                    /subLogin = anon
+                    /testRole1 = roles["admin", "admin1"]
+                    /testRole2 = rolesOr["admin", "admin1"]
+                    /testPerms = perms["user:delete"]
+                    /testPerms1 = perms["user:delete","user:update"]
+                    /* = authc
+                </value>
+            </property>
+            <property name="filters">
+                <util:map>
+                    <entry key="rolesOr" value-ref="rolesOrFilter" />
+                </util:map>
+            </property>
+   </bean>
+
+    <!--创建自定义filter-->
+    <bean class="com.baidu.shiro.filter.RolesOrFilter" id="rolesOrFilter" />
+
+    <!--创建SecurityManager对象-->
+    <bean class="org.apache.shiro.web.mgt.DefaultWebSecurityManager" id="securityManager">
+       <property name="realm" ref="realm" />
+        <property name="sessionManager" ref="sessionManager" />
+    </bean>
+    <!--创建自定义realm-->
+    <bean class="com.baidu.shiro.realm.CustomRealm" id="realm">
+        <property name="credentialsMatcher" ref="credentialsMatcher" />
+    </bean>
+    <!--设计加密方式为MD5，加密次数为1次-->
+    <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher" id="credentialsMatcher">
+        <property name="hashAlgorithmName" value="md5"/>
+        <property name="hashIterations" value="1"/>
+    </bean>
+
+    <!--创建sessionManager-->
+    <!--<bean class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager" id="sessionManager">-->
+    <!--使用自定义sessionManager-->
+    <bean class="com.baidu.shiro.session.CustomSessionManager" id="sessionManager">
+        <property name="sessionDAO" ref="redisSessionDao"></property>
+    </bean>
+
+    <bean class="com.baidu.shiro.session.RedisSessionDao" id="redisSessionDao"/>
+
+</beans>
